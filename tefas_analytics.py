@@ -25,25 +25,24 @@ def date_parser(start_date, end_date):
         end_str = next_date.strftime("%Y-%m-%d")
         data = tefas.fetch(start=start_str, end=end_str, name="OSD", columns=["code", "date", "price", "title"])
         price_data = pd.concat([price_data, data])
-        #print_df(price_data)
-        #print("- - - - - - -")
         start_date = next_date + timedelta(days=1)
-        #print(f"start date :{start_date}")
+
     return price_data.sort_values(by='date',ascending=True)
 
 
 
 
 
+if __name__ == "__main__":
 
-data = date_parser(start_date="2022-11-15", end_date="2023-03-05")
-print_df(data)
-    
-    
+    data = date_parser(start_date="2021-11-15", end_date="2023-03-05")
+    print_df(data)
+        
+        
 
-import matplotlib.pyplot as plt
-#x_axis = list(range(len(balance_list_sc)))
-plt.plot(data[("date")], data[("price")])
-plt.title("OSD Prices")
-plt.show()
+    import matplotlib.pyplot as plt
+    #x_axis = list(range(len(balance_list_sc)))
+    plt.plot(data[("date")], data[("price")])
+    plt.title("OSD Prices")
+    plt.show()
 
