@@ -12,7 +12,7 @@ def print_df(data):
   
         print(row['date'], row['price'])
 
-def date_parser(start_date, end_date):
+def date_parser(start_date, end_date, fund_code):
     delta = relativedelta(months=3)
     price_data = pd.DataFrame()
     start_date = datetime.strptime(start_date, "%Y-%m-%d")
@@ -23,7 +23,7 @@ def date_parser(start_date, end_date):
             next_date = end_date
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = next_date.strftime("%Y-%m-%d")
-        data = tefas.fetch(start=start_str, end=end_str, name="OSD", columns=["code", "date", "price", "title"])
+        data = tefas.fetch(start=start_str, end=end_str, name=fund_code, columns=["code", "date", "price", "title"])
         price_data = pd.concat([price_data, data])
         start_date = next_date + timedelta(days=1)
 
@@ -35,14 +35,33 @@ def date_parser(start_date, end_date):
 
 if __name__ == "__main__":
 
-    data = date_parser(start_date="2021-11-15", end_date="2023-03-05")
-    print_df(data)
+    
+    from dateutil.parser import parse
+    # Retrieve the price data
+    data = date_parser(start_date="2018-01-01", end_date="2022-12-31", fund_code="OSD")
+
+    # Convert the date strings to datetime objects
+    #data["date"] = data["date"].apply(parse)
+
+    # Calculate the beginning and ending values of the fund's price data
+    beginning_value = data.iloc[0]["price"]
+    ending_value = data.iloc[-1]["price"]
+
+    # Calculate the number of years between the beginning and ending dates of the fund's price data
+    num_years = (data.iloc[-1]["date"] - data.iloc[0]["date"]).days / 365.25
+
+    # Calculate the CAGR of the fund's price data
+    cagr = (ending_value / beginning_value) ** (1 / num_years) - 1
+
+    print("CAGR: {:.2%}".format(cagr))
+
         
         
 
     import matplotlib.pyplot as plt
     #x_axis = list(range(len(balance_list_sc)))
     plt.plot(data[("date")], data[("price")])
-    plt.title("OSD Prices")
+    plt.title("RPD Prices")
     plt.show()
 
+    
