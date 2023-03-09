@@ -112,6 +112,14 @@ class MainWindow(QMainWindow):
         comparison_tab.update_graph()
 
         main_layout.addWidget(self.pbar)
+
+        # create button to export to Excel
+        export_button = QPushButton('Export Chosen Funds to Excel ')
+        export_button.clicked.connect(self.export_to_excel)
+        main_layout.addWidget(export_button)
+
+    def export_to_excel(self):
+        pass
     def plot_graph(self):
 
     

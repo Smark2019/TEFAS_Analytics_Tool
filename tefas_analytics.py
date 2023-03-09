@@ -56,11 +56,15 @@ if __name__ == "__main__":
     
 
     # Retrieve the price data
-    data = date_parser(start_date="2019-01-01", end_date="2023-03-01", fund_code="")
+    #data = date_parser(start_date="2019-01-01", end_date="2023-03-01", fund_code="")
 
     #print(get_CAGR(data))
-    plot_graph(data)
-        
+    #plot_graph(data)
+    tefas = Crawler()
+    data = tefas.fetch(start="2020-11-20")[("code")]
+    data = data.reset_index(drop=True)
+    print(data)
+
 
 
     
