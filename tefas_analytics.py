@@ -54,7 +54,7 @@ def plot_graph(price_data_df):
 if __name__ == "__main__":
 
     
-    from dateutil.parser import parse
+
     # Retrieve the price data
     data = date_parser(start_date="2019-01-01", end_date="2023-03-01", fund_code="OSD")
 

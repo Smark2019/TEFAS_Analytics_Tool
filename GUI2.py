@@ -61,8 +61,10 @@ class MainWindow(QMainWindow):
         self.figure.clear()
 
         # get data for plot (random data for demonstration purposes)
-        x = np.linspace(0, 10, 100)
-        y = np.sin(x)
+        x = date_parser(start_date="2019-01-01", end_date="2023-03-01", fund_code="OSD")[("date")]
+
+        y = date_parser(start_date="2019-01-01", end_date="2023-03-01", fund_code="OSD")[("price")]
+
 
         # create plot and add to figure canvas
         ax = self.figure.add_subplot()
