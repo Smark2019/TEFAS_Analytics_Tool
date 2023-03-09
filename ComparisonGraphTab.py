@@ -34,7 +34,7 @@ class ComparisonGraphTab(QWidget):
             y = event.ydata
             self.current_values_label.setText(f'Current values: x={x}, y={y}')
 
-    def update_graph(self, x_data, y_data):
+    def update_graph(self, x_data = [0,1,2,3,4,5], y_data=[0,1,2,3,4,5]):
         # clear previous plot
         self.figure.clear()
 

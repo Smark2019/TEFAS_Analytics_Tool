@@ -51,6 +51,13 @@ def plot_graph(price_data_df):
     plt.title("RPD Prices")
     plt.show()
 
+def get_all_fund_codes():   # returns python list
+    tefas = Crawler()
+    data = tefas.fetch(start = datetime.now().strftime("%Y-%m-%d"))[("code")]
+    data = data.to_list()
+    return data
+
+
 if __name__ == "__main__":
 
     
@@ -60,10 +67,7 @@ if __name__ == "__main__":
 
     #print(get_CAGR(data))
     #plot_graph(data)
-    tefas = Crawler()
-    data = tefas.fetch(start="2020-11-20")[("code")]
-    data = data.reset_index(drop=True)
-    print(data)
+    print(datetime.now().strftime("%Y-%m-%d"))
 
 
 
