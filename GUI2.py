@@ -1,11 +1,13 @@
 import sys
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QDateEdit, QTableWidget, QTableWidgetItem
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QDateEdit, QTableWidget, QTableWidgetItem,QTabWidget
 from PyQt5.QtCore import QDate, Qt
 import numpy as np
 import pandas as pd
 from tefas_analytics import date_parser, get_CAGR
+from ComparisanGraphTab import ComparisonGraphTab
+
 
 class MainWindow(QMainWindow):
     def on_mouse_move(self,event):
@@ -55,6 +57,10 @@ class MainWindow(QMainWindow):
         plot_button = QPushButton('Plot Graph')
         plot_button.clicked.connect(self.plot_graph)
         main_layout.addWidget(plot_button)
+        # create tabs for statistics and comparison graph
+        self.tabs = QTabWidget()
+        main_layout.addWidget(self.tabs)
+
 
         # create matplotlib figure and canvas for graph
         self.figure = plt.figure()
@@ -66,10 +72,19 @@ class MainWindow(QMainWindow):
         self.current_values_label= QLabel("Current Values:")
         main_layout.addWidget(self.current_values_label)
         # create table for statistics
-        stats_table = QTableWidget(1, 3)
-        stats_table.setHorizontalHeaderLabels(['Standard Deviation', 'CAGR', 'Total Return'])
-        main_layout.addWidget(stats_table)
-    
+
+       # create statistics tab
+        stats_tab = QWidget()
+        stats_layout = QVBoxLayout()
+        stats_tab.setLayout(stats_layout)
+        self.stats_table = QTableWidget(1, 3)
+        self.stats_table.setHorizontalHeaderLabels(['Standard Deviation', 'CAGR', 'Total Return'])
+        stats_layout.addWidget(self.stats_table)
+        self.tabs.addTab(stats_tab, 'Statistics')
+
+        # create comparison graph tab
+        comparison_tab = ComparisonGraphTab()
+        self.tabs.addTab(comparison_tab, 'Comparison Graph')
         
     def plot_graph(self):
     
