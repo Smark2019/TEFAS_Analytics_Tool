@@ -1,12 +1,26 @@
 import sys
+import time
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QDateEdit, QTableWidget, QTableWidgetItem,QTabWidget
-from PyQt5.QtCore import QDate, Qt
+from PyQt5.QtWidgets import QProgressBar,QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QDateEdit, QTableWidget, QTableWidgetItem,QTabWidget
+from PyQt5.QtCore import QDate, Qt,QThread, pyqtSignal
 import numpy as np
 import pandas as pd
 from tefas_analytics import date_parser, get_CAGR
-from ComparisonGraphTab import ComparisonGraphTab
+from ComparisanGraphTab import ComparisonGraphTab
+
+class Thread(QThread):
+    _signal = pyqtSignal(int)
+    def __init__(self):
+        super(Thread, self).__init__()
+
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+        for i in range(100):
+            time.sleep(0.05)
+            self._signal.emit(i)
 
 
 class MainWindow(QMainWindow):
@@ -25,6 +39,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Fund Analyzer')
         self.setGeometry(100, 100, 800, 600)
 
+        
+
+
         # create main widget
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
@@ -32,6 +49,11 @@ class MainWindow(QMainWindow):
         # create layout for main widget
         main_layout = QVBoxLayout()
         main_widget.setLayout(main_layout)
+        
+        # create a progress bar
+        self.pbar = QProgressBar(self)
+        self.pbar.setValue(0)
+        main_layout.addWidget(self.pbar)
 
         # create line edit for fund name
         fund_label = QLabel('Fund Name:')
@@ -54,9 +76,10 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(date_layout)
 
         # create button to plot graph
-        plot_button = QPushButton('Plot Graph')
-        plot_button.clicked.connect(self.plot_graph)
-        main_layout.addWidget(plot_button)
+        self.plot_button = QPushButton('Plot Graph')
+        self.plot_button.clicked.connect(self.plot_graph)
+        main_layout.addWidget(self.plot_button)
+        
         # create tabs for statistics and comparison graph
         self.tabs = QTabWidget()
         main_layout.addWidget(self.tabs)
@@ -65,6 +88,7 @@ class MainWindow(QMainWindow):
         # create matplotlib figure and canvas for graph
         self.figure = plt.figure()
         self.canvas = FigureCanvas(self.figure)
+        
         self.canvas.mpl_connect("motion_notify_event", self.on_mouse_move)
         main_layout.addWidget(self.canvas)
         
@@ -85,8 +109,11 @@ class MainWindow(QMainWindow):
         # create comparison graph tab
         comparison_tab = ComparisonGraphTab()
         self.tabs.addTab(comparison_tab, 'Comparison Graph')
-        
+        comparison_tab.update_graph()
+
+        main_layout.addWidget(self.pbar)
     def plot_graph(self):
+
     
         
         
@@ -107,10 +134,12 @@ class MainWindow(QMainWindow):
         try:
             
 	    
-            if(self.fund_edit.text() == ""):
+            if(self.fund_edit.text() == "" or len(self.fund_edit.text()) > 3 or any(char.isdigit() for char in self.fund_edit.text())):
                    
-                    self.fund_edit.setText("GEÇERLİ FON KODU GİRİNİZ:")
+                    self.fund_edit.setText("       GEÇERLİ FON KODU GİRİNİZ !       ")
                     raise Exception()
+            # activate progress bar
+            self.btnFunc()
             whole_df = date_parser(start_date=start_date_string, end_date=end_date_string, fund_code=self.fund_edit.text())
             x = whole_df["date"]
             y = whole_df["price"] 
@@ -125,6 +154,12 @@ class MainWindow(QMainWindow):
             return_for_prices = ((ending_price / beginning_price) -1 )* 100
             # create plot and add to figure canvas
             ax = self.figure.add_subplot()
+            
+            self.figure.suptitle(f'{self.fund_edit.text()} Prices Between {start_date_string} and {end_date_string}', fontsize=10)
+            
+            
+            ax.set_xlabel("Date",fontsize=10)
+            ax.set_ylabel("Price",fontsize=10)
             ax.plot(x, y)
             self.canvas.draw()
             # update table with statistics (random data for demonstration purposes)
@@ -137,8 +172,20 @@ class MainWindow(QMainWindow):
 		
 		
         except:
-            print("Entered except block.")
-		
+            print("GEÇERSİZ FON GİRİŞİ !")
+
+    
+    def btnFunc(self):
+        self.thread = Thread()
+        self.thread._signal.connect(self.signal_accept)
+        self.thread.start()
+        self.plot_button.setEnabled(False)
+
+    def signal_accept(self, msg):
+        self.pbar.setValue(int(msg))
+        if self.pbar.value() == 99:
+            self.pbar.setValue(0)
+            self.plot_button.setEnabled(True)	
         
             
 
@@ -152,3 +199,4 @@ if __name__ == '__main__':
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
+
