@@ -6,7 +6,7 @@ from PyQt5.QtCore import QDate, Qt
 import numpy as np
 import pandas as pd
 from tefas_analytics import date_parser, get_CAGR
-from ComparisanGraphTab import ComparisonGraphTab
+from ComparisonGraphTab import ComparisonGraphTab
 
 
 class MainWindow(QMainWindow):
