@@ -53,7 +53,7 @@ def plot_graph(price_data_df):
 
 def get_all_fund_codes():   # returns python list
     tefas = Crawler()
-    data = tefas.fetch(start = datetime.now().strftime("%Y-%m-%d"))[("code")]
+    data = tefas.fetch(start = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d"))[("code")]
     data = data.to_list()
     return data
 
@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
     #print(get_CAGR(data))
     #plot_graph(data)
-    print(datetime.now().strftime("%Y-%m-%d"))
+    print(get_all_fund_codes())
 
 
 

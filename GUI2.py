@@ -2,12 +2,14 @@ import sys
 import time
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from PyQt5.QtWidgets import QProgressBar,QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QDateEdit, QTableWidget, QTableWidgetItem,QTabWidget
+from PyQt5.QtWidgets import QDialog,QProgressBar,QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QDateEdit, QTableWidget, QTableWidgetItem,QTabWidget
 from PyQt5.QtCore import QDate, Qt,QThread, pyqtSignal
 import numpy as np
 import pandas as pd
-from tefas_analytics import date_parser, get_CAGR
+from tefas_analytics import date_parser, get_CAGR,get_all_fund_codes
 from ComparisonGraphTab import ComparisonGraphTab
+from FundCodeSelectionPopup import FundCodeSelectionPopup
+
 
 class Thread(QThread):
     _signal = pyqtSignal(int)
@@ -65,7 +67,7 @@ class MainWindow(QMainWindow):
 
         # create date range picker
         date_label = QLabel('Date Range:')
-        self.start_date_edit = QDateEdit(QDate.currentDate().addYears(-1))
+        self.start_date_edit = QDateEdit(QDate.currentDate().addMonths(-3))
         self.start_date_edit.setCalendarPopup(True)
         self.end_date_edit = QDateEdit(QDate.currentDate())
         self.end_date_edit.setCalendarPopup(True)
@@ -118,8 +120,37 @@ class MainWindow(QMainWindow):
         export_button.clicked.connect(self.export_to_excel)
         main_layout.addWidget(export_button)
 
-    def export_to_excel(self):
-        pass
+    def export_to_excel(self):      # exporting chosen fund price data to excel sheet.
+        func_codes_list = get_all_fund_codes()
+        popup = FundCodeSelectionPopup(func_codes_list)
+        
+        if popup.exec_() == QDialog.Accepted:
+            print('Selected Fund Codes:', popup.selected_fund_codes)
+        if(len(popup.selected_fund_codes) != 0):
+            start_date_string = self.start_date_edit.date()
+            end_date_string = self.end_date_edit.date()
+            
+            start_date_string = '{0}-{1}-{2}'.format(start_date_string.year(), start_date_string.month(), start_date_string.day())
+            end_date_string = '{0}-{1}-{2}'.format(end_date_string.year(), end_date_string.month(), end_date_string.day())
+            # init df list to hold price df s:
+            price_dfs_list = []
+            for fund_code in popup.selected_fund_codes:
+                current_fund_price_df = date_parser(start_date = start_date_string, end_date = end_date_string, fund_code = fund_code)
+                price_dfs_list.append(current_fund_price_df)
+
+            # calling multiple_dfs func:
+            self.multiple_dfs(price_dfs_list)
+
+    # funtion
+    def multiple_dfs(self,df_list, sheets = "Prices Sheet", file_name = "output2.xlsx", spaces = 5):
+        writer = pd.ExcelWriter(file_name,engine='xlsxwriter')   
+        row = 0
+        for dataframe in df_list:
+            dataframe.to_excel(writer,sheet_name=sheets,startrow=row , startcol=0)   
+            row = row + len(dataframe.index) + spaces + 1
+        writer.save()
+
+
     def plot_graph(self):
 
     
@@ -207,4 +238,5 @@ if __name__ == '__main__':
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
+
 
