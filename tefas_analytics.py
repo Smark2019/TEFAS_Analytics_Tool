@@ -56,9 +56,9 @@ if __name__ == "__main__":
     
 
     # Retrieve the price data
-    data = date_parser(start_date="2019-01-01", end_date="2023-03-01", fund_code="OSD")
+    data = date_parser(start_date="2019-01-01", end_date="2023-03-01", fund_code="")
 
-    print(get_CAGR(data))
+    #print(get_CAGR(data))
     plot_graph(data)
         
 
