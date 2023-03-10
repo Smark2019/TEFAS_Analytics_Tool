@@ -11,22 +11,35 @@ def print_df(data):
     print(tabulate(data.reset_index(drop=True), headers = 'keys', tablefmt = 'pretty'))
 
 
-def date_parser(start_date, end_date, fund_code):
+def date_parser(start_date, end_date, fund_code,columns):
     tefas = Crawler()
-
     delta = relativedelta(months=3)
     price_data = pd.DataFrame()
     start_date = datetime.strptime(start_date, "%Y-%m-%d")
     end_date = datetime.strptime(end_date, "%Y-%m-%d")
-    while start_date < end_date:
-        next_date = start_date + delta
-        if next_date > end_date:
-            next_date = end_date
-        start_str = start_date.strftime("%Y-%m-%d")
-        end_str = next_date.strftime("%Y-%m-%d")
-        data = tefas.fetch(start=start_str, end=end_str, name=fund_code, columns=["code", "date", "price", "stock"])
-        price_data = pd.concat([price_data, data])
-        start_date = next_date + timedelta(days=1)
+
+    if(columns == ["all"]):
+        print("ENTERED GATE 1")
+        while start_date < end_date:
+            next_date = start_date + delta
+            if next_date > end_date:
+                next_date = end_date
+            start_str = start_date.strftime("%Y-%m-%d")
+            end_str = next_date.strftime("%Y-%m-%d")
+            data = tefas.fetch(start=start_str, end=end_str, name=fund_code)
+            price_data = pd.concat([price_data, data])
+            start_date = next_date + timedelta(days=1)
+    else:
+    
+        while start_date < end_date:
+            next_date = start_date + delta
+            if next_date > end_date:
+                next_date = end_date
+            start_str = start_date.strftime("%Y-%m-%d")
+            end_str = next_date.strftime("%Y-%m-%d")
+            data = tefas.fetch(start=start_str, end=end_str, name=fund_code, columns=columns)
+            price_data = pd.concat([price_data, data])
+            start_date = next_date + timedelta(days=1)
 
     return price_data.sort_values(by='date',ascending=True) # returns df
 

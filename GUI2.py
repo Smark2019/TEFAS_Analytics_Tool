@@ -2,7 +2,7 @@ import sys
 import time
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from PyQt5.QtWidgets import QDialog,QProgressBar,QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QDateEdit, QTableWidget, QTableWidgetItem,QTabWidget
+from PyQt5.QtWidgets import QMessageBox,QDialog,QProgressBar,QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QDateEdit, QTableWidget, QTableWidgetItem,QTabWidget
 from PyQt5.QtCore import QDate, Qt,QThread, pyqtSignal
 import numpy as np
 import pandas as pd
@@ -10,6 +10,8 @@ from tefas_analytics import date_parser, get_CAGR,get_all_fund_codes
 from ComparisonGraphTab import ComparisonGraphTab
 from FundCodeSelectionPopup import FundCodeSelectionPopup
 from datetime import datetime
+from PyQt5.QtGui import QIcon
+
 
 class Thread(QThread):
     _signal = pyqtSignal(int)
@@ -78,11 +80,23 @@ class MainWindow(QMainWindow):
         date_layout.addWidget(self.end_date_edit)
         main_layout.addLayout(date_layout)
 
+        # create layout for plot and export buttons
+        plot_layout = QHBoxLayout()
+        main_layout.addLayout(plot_layout)
+
         # create button to plot graph
         self.plot_button = QPushButton('Plot Graph')
         self.plot_button.clicked.connect(self.plot_graph)
-        main_layout.addWidget(self.plot_button)
+        plot_layout.addWidget(self.plot_button)
         
+        # create button to export to Excel
+        self.tiny_export_button = QPushButton()
+        self.tiny_export_button.setIcon(QIcon('excel_icon.png'))
+        self.tiny_export_button.setFixedSize(90, 25)
+        self.tiny_export_button.clicked.connect(self.only_one_export_to_excel)
+        self.tiny_export_button.setEnabled(False)
+        plot_layout.addWidget(self.tiny_export_button)
+
         # create tabs for statistics and comparison graph
         self.tabs = QTabWidget()
         main_layout.addWidget(self.tabs)
@@ -121,7 +135,36 @@ class MainWindow(QMainWindow):
         export_button.clicked.connect(self.export_to_excel)
         main_layout.addWidget(export_button)
 
+    def only_one_export_to_excel(self):      # exporting chosen ONE fund price data to excel sheet.
+        
+        start_date_string = self.start_date_edit.date()
+        end_date_string = self.end_date_edit.date()
+        
+        start_date_string = '{0}-{1}-{2}'.format(start_date_string.year(), start_date_string.month(), start_date_string.day())
+        end_date_string = '{0}-{1}-{2}'.format(end_date_string.year(), end_date_string.month(), end_date_string.day())
+        # getting data
+        current_fund_price_df = date_parser(start_date = start_date_string, end_date = end_date_string, fund_code = self.fund_edit.text(), columns= ["all"])
+        writer = pd.ExcelWriter(path = "Report of " + self.fund_edit.text()+".xlsx",engine='xlsxwriter')   
+                
+        # format the date column as "dd-mm-yyyy" and then splitting
+        current_fund_price_df['date'] = pd.to_datetime(current_fund_price_df['date'], errors='coerce')
+        
+        #dataframe['date'] = dataframe['date'].dt.strftime('%d-%m-%Y')
+        current_fund_price_df.loc[:, 'date'] = current_fund_price_df['date'].dt.strftime('%d-%m-%Y')
+        # writing to excel
+        current_fund_price_df.to_excel(writer,sheet_name=self.fund_edit.text(),startrow=0 , startcol=0)   
+        
+        writer.save()
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setText("The export to Excel was successful.")
+        msg.setInformativeText("The data has been exported correctly.")
+        msg.setWindowTitle("Export Successful")
+        msg.exec_()
+            
+
     def export_to_excel(self):      # exporting chosen fund price data to excel sheet.
+        
         self.btnFunc(waits_for= 0.06)
         func_codes_list = get_all_fund_codes() # gettin all actual fund codes ...
         popup = FundCodeSelectionPopup(func_codes_list)
@@ -138,7 +181,7 @@ class MainWindow(QMainWindow):
             # init df list to hold price df s:
             price_dfs_list = []
             for fund_code in popup.selected_fund_codes:
-                current_fund_price_df = date_parser(start_date = start_date_string, end_date = end_date_string, fund_code = fund_code)
+                current_fund_price_df = date_parser(start_date = start_date_string, end_date = end_date_string, fund_code = fund_code,columns=["code", "date", "price", "stock"])
                 price_dfs_list.append(current_fund_price_df)
 
             # finding most late date for chosen funds
@@ -170,6 +213,14 @@ class MainWindow(QMainWindow):
             col = col + len(dataframe.columns) + spaces + 1
         writer.save()
 
+        # QMessageBox demo:
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setText("The export to Excel was successful.")
+        msg.setInformativeText("The data has been exported correctly.")
+        msg.setWindowTitle("Export Successful")
+        msg.exec_()
+
 
     def plot_graph(self):
 
@@ -199,7 +250,7 @@ class MainWindow(QMainWindow):
                     raise Exception()
             # activate progress bar
             self.btnFunc()
-            whole_df = date_parser(start_date=start_date_string, end_date=end_date_string, fund_code=self.fund_edit.text())
+            whole_df = date_parser(start_date=start_date_string, end_date=end_date_string, fund_code=self.fund_edit.text(), columns=["code", "date", "price"])
             x = whole_df["date"]
             y = whole_df["price"] 
 	    
@@ -226,7 +277,11 @@ class MainWindow(QMainWindow):
             stats_table.setItem(0, 0, QTableWidgetItem(str(round(y.std(),2))))
             stats_table.setItem(0, 1, QTableWidgetItem(str(get_CAGR(whole_df))))
             stats_table.setItem(0, 2, QTableWidgetItem(str(round(return_for_prices,2)) + " %"))
-            stats_table.resizeColumnsToContents()               
+            stats_table.resizeColumnsToContents()
+
+            # lets user to use Tiny exporting excel button:
+            self.tiny_export_button.setEnabled(True)
+            self.tiny_export_button.setText(self.fund_edit.text())
             
 		
 		
