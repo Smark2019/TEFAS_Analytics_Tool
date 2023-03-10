@@ -9,12 +9,13 @@ import pandas as pd
 from tefas_analytics import date_parser, get_CAGR,get_all_fund_codes
 from ComparisonGraphTab import ComparisonGraphTab
 from FundCodeSelectionPopup import FundCodeSelectionPopup
-
+from datetime import datetime
 
 class Thread(QThread):
     _signal = pyqtSignal(int)
-    def __init__(self):
+    def __init__(self,waits_for = 0.05):
         super(Thread, self).__init__()
+        self.waits_for = waits_for
 
     def __del__(self):
         self.wait()
@@ -121,12 +122,14 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(export_button)
 
     def export_to_excel(self):      # exporting chosen fund price data to excel sheet.
-        func_codes_list = get_all_fund_codes()
+        self.btnFunc(waits_for= 0.06)
+        func_codes_list = get_all_fund_codes() # gettin all actual fund codes ...
         popup = FundCodeSelectionPopup(func_codes_list)
         
         if popup.exec_() == QDialog.Accepted:
             print('Selected Fund Codes:', popup.selected_fund_codes)
         if(len(popup.selected_fund_codes) != 0):
+            self.btnFunc()
             start_date_string = self.start_date_edit.date()
             end_date_string = self.end_date_edit.date()
             
@@ -138,16 +141,33 @@ class MainWindow(QMainWindow):
                 current_fund_price_df = date_parser(start_date = start_date_string, end_date = end_date_string, fund_code = fund_code)
                 price_dfs_list.append(current_fund_price_df)
 
+            # finding most late date for chosen funds
+            most_late_date = datetime(1900, 1, 1)
+            for dataframe in price_dfs_list:
+                dataframe['date'] = pd.to_datetime(dataframe['date'], errors='coerce')
+                if(dataframe['date'].iloc[0] > most_late_date ):
+                    most_late_date = dataframe['date'].iloc[0]
+            
             # calling multiple_dfs func:
-            self.multiple_dfs(price_dfs_list)
+            self.multiple_dfs(price_dfs_list, most_late_date= most_late_date)
+
 
     # funtion
-    def multiple_dfs(self,df_list, sheets = "Prices Sheet", file_name = "output2.xlsx", spaces = 5):
+    def multiple_dfs(self,df_list, sheets = "Prices Sheet", file_name = "Prices.xlsx", spaces = 2,most_late_date = datetime(1900, 1, 1)):
         writer = pd.ExcelWriter(file_name,engine='xlsxwriter')   
-        row = 0
+        col = 0
+        
         for dataframe in df_list:
-            dataframe.to_excel(writer,sheet_name=sheets,startrow=row , startcol=0)   
-            row = row + len(dataframe.index) + spaces + 1
+            
+            # format the date column as "dd-mm-yyyy" and then splitting
+            dataframe['date'] = pd.to_datetime(dataframe['date'], errors='coerce')
+            
+            dataframe = dataframe[dataframe['date'] >= most_late_date]
+            #dataframe['date'] = dataframe['date'].dt.strftime('%d-%m-%Y')
+            dataframe.loc[:, 'date'] = dataframe['date'].dt.strftime('%d-%m-%Y')
+            # writing to excel
+            dataframe.to_excel(writer,sheet_name=sheets,startrow=0 , startcol=col)   
+            col = col + len(dataframe.columns) + spaces + 1
         writer.save()
 
 
@@ -214,8 +234,8 @@ class MainWindow(QMainWindow):
             print("GEÇERSİZ FON GİRİŞİ !")
 
     
-    def btnFunc(self):
-        self.thread = Thread()
+    def btnFunc(self, waits_for = 0.05):
+        self.thread = Thread(waits_for = 0.05)
         self.thread._signal.connect(self.signal_accept)
         self.thread.start()
         self.plot_button.setEnabled(False)
