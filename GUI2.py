@@ -144,7 +144,7 @@ class MainWindow(QMainWindow):
         end_date_string = '{0}-{1}-{2}'.format(end_date_string.year(), end_date_string.month(), end_date_string.day())
         # getting data
         current_fund_price_df = date_parser(start_date = start_date_string, end_date = end_date_string, fund_code = self.fund_edit.text(), columns= ["all"])
-        writer = pd.ExcelWriter(path = "Report of " + self.fund_edit.text()+".xlsx",engine='xlsxwriter')   
+        writer = pd.ExcelWriter(path =self.fund_edit.text()+".xlsx",engine='xlsxwriter')   
                 
         # format the date column as "dd-mm-yyyy" and then splitting
         current_fund_price_df['date'] = pd.to_datetime(current_fund_price_df['date'], errors='coerce')
@@ -244,9 +244,10 @@ class MainWindow(QMainWindow):
         try:
             
 	    
-            if(self.fund_edit.text() == "" or len(self.fund_edit.text()) > 3 or any(char.isdigit() for char in self.fund_edit.text())):
+            if(self.fund_edit.text() == "" or len(self.fund_edit.text()) > 3 ):
                    
-                    self.fund_edit.setText("       GEÇERLİ FON KODU GİRİNİZ !       ")
+                    self.fund_edit.clear()
+                    self.fund_edit.setPlaceholderText("       GEÇERLİ FON KODU GİRİNİZ !       ")
                     raise Exception()
             # activate progress bar
             self.btnFunc()
